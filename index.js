@@ -28,9 +28,19 @@ async function run() {
         const cartCollection = client.db("bistroDBNew").collection("cart");
         const userCollection = client.db("bistroDBNew").collection("user");
         // user related APIs
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray()
+            res.send(result)
+        })
         app.post('/users', async (req, res) => {
             const newUser = req.body;
             console.log(newUser);
+            const query = { email: newUser.email }
+            const existingUser = await userCollection.findOne(query);
+            console.log(existingUser);
+            if (existingUser) {
+                return res.send({})
+            }
             const result = await userCollection.insertOne(newUser);
             res.send(result)
         })
