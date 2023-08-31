@@ -28,6 +28,18 @@ async function run() {
         const cartCollection = client.db("bistroDBNew").collection("cart");
         const userCollection = client.db("bistroDBNew").collection("user");
         // user related APIs
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            // console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result)
+        })
         app.get('/users', async (req, res) => {
             const result = await userCollection.find().toArray()
             res.send(result)
@@ -64,7 +76,7 @@ async function run() {
         })
         app.post('/carts', async (req, res) => {
             const cartItem = req.body;
-            console.log(cartItem);
+            // console.log(cartItem);
             const result = await cartCollection.insertOne(cartItem);
             res.send(result)
 
