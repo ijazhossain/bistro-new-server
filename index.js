@@ -10,10 +10,12 @@ app.use(express.json())
 
 const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
+    // console.log(authorization);
     if (!authorization) {
         return res.status(401).send({ error: true, message: 'unauthorized access1' })
     }
     const token = authorization.split(' ')[1];
+    // console.log(token);
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
             return res.status(401).send({ error: true, message: 'unauthorized access2' })
@@ -48,6 +50,27 @@ async function run() {
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
             res.send({ token });
         })
+        // middleware to verify admin
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'forbidden access' });
+            }
+            next();
+        }
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            console.log(email);
+            if (req.decoded.email !== email) {
+                return res.send({ admin: false })
+            }
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const result = { admin: user.role === 'admin' };
+            res.send(result);
+        })
         // user related APIs
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
@@ -61,16 +84,16 @@ async function run() {
             const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result)
         })
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await userCollection.find().toArray()
             res.send(result)
         })
         app.post('/users', async (req, res) => {
             const newUser = req.body;
-            console.log(newUser);
+            // console.log(newUser);
             const query = { email: newUser.email }
             const existingUser = await userCollection.findOne(query);
-            console.log(existingUser);
+            // console.log(existingUser);
             if (existingUser) {
                 return res.send({})
             }
