@@ -62,7 +62,7 @@ async function run() {
         }
         app.get('/users/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            console.log(email);
+            // console.log(email);
             if (req.decoded.email !== email) {
                 return res.send({ admin: false })
             }
@@ -101,6 +101,17 @@ async function run() {
             res.send(result)
         })
         // menu related APIs
+        app.delete('/menu/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await menuCollection.deleteOne(query);
+            res.send(result);
+        })
+        app.post('/menu', verifyJWT, verifyAdmin, async (req, res) => {
+            const newItem = req.body;
+            const result = await menuCollection.insertOne(newItem);
+            res.send(result);
+        })
         app.delete('/carts/:id', async (req, res) => {
             const id = req.params.id;
             // console.log(id);
