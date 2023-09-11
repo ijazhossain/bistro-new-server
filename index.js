@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 var jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe = require("stripe")(process.env.PAYMENT_SECERT_KEY)
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -25,7 +27,7 @@ const verifyJWT = (req, res, next) => {
     })
 
 }
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zrkqnje.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -99,6 +101,20 @@ async function run() {
             }
             const result = await userCollection.insertOne(newUser);
             res.send(result)
+        })
+        // payment
+
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
         })
         // menu related APIs
         app.delete('/menu/:id', verifyJWT, verifyAdmin, async (req, res) => {
